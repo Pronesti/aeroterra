@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import GoogleMapReact from 'google-map-react';
-import { Icon, Input, Select, Form, Modal } from 'antd';
+import { Icon, Input, Select, Form, Modal, Button } from 'antd';
 
 const Marker = ({ onClick }) => (
   <Icon type='environment' style={{ fontSize: 32 }} onClick={onClick} />
@@ -13,80 +13,113 @@ const defaultProps = {
   },
   zoom: 13
 };
-let markers = [{ lat: -34.599184, lng: -58.450783, text: 'Marker1' }];
 
-export default function Gmap(props) {
-  const [selectedPoint, setSelectedPoint] = useState();
-  const [visibleAgregar, setVisibleAgregar] = useState(false);
-  const [visibleEditar, setVisibleEditar] = useState(false);
+export default function Gmap() {
+  const [markers, setMarkers] = useState([
+    {
+      nombre: 'Marker1',
+      direccion: 'calle falsa 123',
+      telefono: '46484544',
+      categoria: 'comercial',
+      lat: -34.599184,
+      lng: -58.450783
+    }
+  ]);
+
+  const [selectedPoint, setSelectedPoint] = useState({ lat: 0, lng: 0 });
+  const [formulario, setFormulario] = useState({ visible: false, tipo: '' });
 
   const clickOnMap = ({ x, y, lat, lng, event }) => {
-    setSelectedPoint({lat, lng});
-    setVisibleAgregar(true);
-    console.log(x, y, lat, lng, event);
+    setSelectedPoint({ lat, lng });
+    setFormulario({ visible: true, tipo: 'Agregar' });
   };
 
-  const clickOnMarker = (marker) => {
-    setSelectedPoint({lat: marker.lat, lng: marker.lng});
-    setVisibleEditar(true);
-  }
-
-  const formularioAgregar = () => {
-    return (
-      <Modal
-        title='Agregar Marcador'
-        visible={visibleAgregar}
-        handleOk={() => console.log('acc')}
-        handleCancel={() => setVisibleAgregar(false)}>
-        <Form.Item label="Nombre">
-        <Input placeholder='Nombre' />
-        </Form.Item>
-        <Form.Item label="Direccion">
-        <Input placeholder='Direccion' />
-        </Form.Item>
-        <Form.Item label="Telefono">
-        <Input placeholder='Telefono' />
-        </Form.Item>
-        <Form.Item label="Categoria">
-        <Select defaultValue='comercial' style={{ width: 120 }}>
-          <Select.Option value='comercial'>Comercial</Select.Option>
-          <Select.Option value='residencial'>Residencial</Select.Option>
-          <Select.Option value='rixta'>Mixta</Select.Option>
-        </Select>
-        </Form.Item>
-        <Form.Item label="Coordenadas">
-        <Input placeholder='Coordenadas' />
-        </Form.Item>
-      </Modal>
-    );
+  const clickOnMarker = marker => {
+    setSelectedPoint(marker);
+    setFormulario({ visible: true, tipo: 'Editar' });
   };
-  const formularioEditar = () => {
+
+  const handleMarkerChange = event => {
+    let modify = {...selectedPoint};
+    modify[event.target.name] = event.target.value;
+    setSelectedPoint(modify);
+  };
+
+  const handleMarkerChangeSelect = event => {
+    let modify = {...selectedPoint};
+    modify['categoria'] = event;
+    setSelectedPoint(modify);
+  };
+
+  const addMarker = () => setMarkers([...markers, ...selectedPoint]);
+  const saveMarker = () => setMarkers([...markers.splice(selectedPoint, 1), ...selectedPoint]);
+  const deleteMarker = () => setMarkers([...markers.splice(selectedPoint,1)]);
+
+  const footer = () => {
+    if (formulario.tipo === 'Agregar') {
+      return [
+        <Button onClick={addMarker}>Agregar</Button>,
+        <Button onClick={() => setFormulario({ visible: false })}>
+          Cancelar
+        </Button>
+      ];
+    } else {
+      return [
+        <Button onClick={saveMarker}>Editar</Button>,
+        <Button onClick={deleteMarker}>Eliminar</Button>,
+        <Button onClick={() => setFormulario({ visible: false })}>
+          Cancelar
+        </Button>
+      ];
+    }
+  };
+
+  const renderFormulario = () => {
     return (
       <Modal
-        title='Editar Marcador'
-        visible={visibleEditar}
-        onOk={() => console.log('acc')}
-        onCancel={() => setVisibleEditar(false)}
-      >
-      <Form.Item label="Nombre">
-        <Input placeholder='Nombre'/>
-        </Form.Item>
-        <Form.Item label="Direccion">
-        <Input placeholder='Direccion' />
-        </Form.Item>
-        <Form.Item label="Telefono">
-        <Input placeholder='Telefono' />
-        </Form.Item>
-        <Form.Item label="Categoria">
-        <Select defaultValue='comercial' style={{ width: 120 }}>
-          <Select.Option value='comercial'>Comercial</Select.Option>
-          <Select.Option value='residencial'>Residencial</Select.Option>
-          <Select.Option value='rixta'>Mixta</Select.Option>
-        </Select>
-        </Form.Item>
-        <Form.Item label="Coordenadas">
-        <Input placeholder='Coordenadas' />
-        </Form.Item>
+        title={formulario.tipo + ' Marcador'}
+        visible={formulario.visible}
+        footer={footer()}>
+        <Form onSubmit={addMarker}>
+          <Form.Item label='Nombre'>
+            <Input name="nombre" placeholder='Nombre' value={selectedPoint.nombre} onChange={e => handleMarkerChange(e)} />
+          </Form.Item>
+          <Form.Item label='Direccion'>
+            <Input
+              name="direccion"
+              placeholder='Direccion'
+              value={selectedPoint.direccion}
+              onChange={e => handleMarkerChange(e)}
+            />
+          </Form.Item>
+          <Form.Item label='Telefono'>
+            <Input
+              name="telefono"
+              placeholder='Telefono'
+              value={selectedPoint.telefono}
+              onChange={e => handleMarkerChange(e)}
+            />
+          </Form.Item>
+          <Form.Item label='Categoria'>
+            <Select
+              name="categoria"
+              defaultValue={selectedPoint.categoria}
+              style={{ width: 120 }}
+              onChange={e => handleMarkerChangeSelect(e)}>
+              <Select.Option value='comercial'>Comercial</Select.Option>
+              <Select.Option value='residencial'>Residencial</Select.Option>
+              <Select.Option value='rixta'>Mixta</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label='Coordenadas'>
+            <Input
+              name="coordenadas"
+              placeholder='Coordenadas'
+              value={selectedPoint.lat + ', ' + selectedPoint.lng}
+              onChange={e => handleMarkerChange(e)}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     );
   };
@@ -105,8 +138,6 @@ export default function Gmap(props) {
     });
   };
 
-  console.log('SP: ', selectedPoint);
-
   return (
     <div style={{ height: '100vh', width: '100%' }}>
       <GoogleMapReact
@@ -114,8 +145,7 @@ export default function Gmap(props) {
         defaultCenter={defaultProps.center}
         defaultZoom={defaultProps.zoom}
         onClick={clickOnMap}>
-        {formularioAgregar()}
-        {formularioEditar()}
+        {renderFormulario()}
         {mostrarMarcadores()}
       </GoogleMapReact>
     </div>
