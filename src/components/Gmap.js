@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import GoogleMapReact from 'google-map-react';
 import { Icon, Input, Select, Form, Modal, Button, Typography, List } from 'antd';
 import axios from 'axios';
+import jsonData from './../data/markers.json';
+
+const loadData = () => JSON.parse(JSON.stringify(jsonData));
 
 const CustomMarker = ({ onClick }) => (
   <Icon type='environment' style={{ fontSize: 32 }} onClick={onClick} />
@@ -16,16 +19,7 @@ const defaultProps = {
 };
 
 export default function Gmap() {
-  const [markers, setMarkers] = useState([
-    {
-      nombre: 'Marker1',
-      direccion: 'calle falsa 123',
-      telefono: '46484544',
-      categoria: 'comercial',
-      lat: -34.599184,
-      lng: -58.450783
-    }
-  ]);
+  const [markers, setMarkers] = useState([loadData()]);
 
   const [selectedPoint, setSelectedPoint] = useState({ lat: 0, lng: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -216,6 +210,7 @@ export default function Gmap() {
 
   console.log('sp: ', selectedPoint);
   console.log(markers);
+  loadData();
 
   return (
     <div style={{ height: '100vh', width: '100%' }}>
