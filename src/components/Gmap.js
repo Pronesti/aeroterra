@@ -8,7 +8,9 @@ const loadData = () => JSON.parse(JSON.stringify(jsonData));
 
 const CustomMarker = ({ onClick, icon }) => {
   let iconString;
-  switch (icon) { //Define el icono segun la categoria
+  switch (
+    icon //Define el icono segun la categoria
+  ) {
     case 'residencial':
       iconString = 'home';
       break;
@@ -36,7 +38,14 @@ const defaultProps = {
 export default function Gmap() {
   //Hooks para manejar el estado
   const [markers, setMarkers] = useState([loadData()]);
-  const [selectedPoint, setSelectedPoint] = useState({ nombre: '', direccion: '', telefono: '', categoria: '', lat: 0, lng: 0 });
+  const [selectedPoint, setSelectedPoint] = useState({
+    nombre: '',
+    direccion: '',
+    telefono: '',
+    categoria: '',
+    lat: 0,
+    lng: 0
+  });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedAddress, setSelectedAddress] = useState('');
   const [showPopUp, setShowPopUp] = useState(false);
@@ -50,7 +59,11 @@ export default function Gmap() {
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyC5lobyQqUiuRQz6Gy5WydBszxcMnpzBHA`
       )
       .then(res => {
-        setSelectedAddress(res.data.results[0].formatted_address);
+        try {
+          setSelectedAddress(res.data.results[0].formatted_address);
+        } catch (err) {
+          console.log(err);
+        }
         setSelectedPoint({
           direccion: selectedAddress,
           categoria: 'comercial',
@@ -58,7 +71,8 @@ export default function Gmap() {
           lng
         });
         setFormulario({ visible: true, tipo: 'Agregar' });
-      });
+      })
+      .catch(err => console.log(err));
   };
 
   const clickOnMarker = marker => {
