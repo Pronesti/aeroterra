@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import GoogleMapReact from 'google-map-react';
-import { Icon, Input, Select, Form, Modal, Button, Typography } from 'antd';
+import { Icon, Input, Select, Form, Modal, Button, Typography, List } from 'antd';
 import axios from 'axios';
 
 const CustomMarker = ({ onClick }) => (
@@ -179,14 +179,20 @@ export default function Gmap() {
         <div
           style={{
             backgroundColor: 'white',
-            height: '100px',
-            width: '200px',
-            transform: 'translate(20px, -100px)',
+            minHeight: '100px',
+            minWidth: '200px',
+            transform: 'translate(30px, -100px)',
             borderRadius: '1px'
           }}
           lat={pop.lat}
           lng={pop.lng}>
-          <Typography>{pop.nombre}</Typography>
+          <List size="small">
+          <List.Item>{pop.nombre}</List.Item>
+          <List.Item>Direccion: {pop.direccion}</List.Item>
+          <List.Item>Telefono: {pop.telefono}</List.Item>
+          <List.Item>Categoria: {pop.categoria}</List.Item>
+          <List.Item>Coordenadas: {pop.lat + ', ' + pop.lng}</List.Item>
+          </List>
         </div>
       );
     } else {
