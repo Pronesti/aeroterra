@@ -1,14 +1,29 @@
 import React, { useState } from 'react';
 import GoogleMapReact from 'google-map-react';
-import { Icon, Input, Select, Form, Modal, Button, Typography, List } from 'antd';
+import { Icon, Input, Select, Form, Modal, Button, List } from 'antd';
 import axios from 'axios';
 import jsonData from './../data/markers.json';
 
 const loadData = () => JSON.parse(JSON.stringify(jsonData));
 
-const CustomMarker = ({ onClick }) => (
-  <Icon type='environment' style={{ fontSize: 32 }} onClick={onClick} />
-);
+const CustomMarker = ({ onClick, icon }) => {
+  let iconString;
+  switch (icon) { //Define el icono segun la categoria
+    case 'residencial':
+      iconString = 'home';
+      break;
+    case 'mixta':
+      iconString = 'environment';
+      break;
+    case 'comercial':
+      iconString = 'shop';
+      break;
+    default:
+      iconString = 'environment';
+      break;
+  }
+  return <Icon type={iconString} style={{ fontSize: 32 }} onClick={onClick} />;
+};
 
 const defaultProps = {
   center: {
@@ -19,9 +34,9 @@ const defaultProps = {
 };
 
 export default function Gmap() {
+  //Hooks para manejar el estado
   const [markers, setMarkers] = useState([loadData()]);
-
-  const [selectedPoint, setSelectedPoint] = useState({ lat: 0, lng: 0 });
+  const [selectedPoint, setSelectedPoint] = useState({ nombre: '', direccion: '', telefono: '', categoria: '', lat: 0, lng: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedAddress, setSelectedAddress] = useState('');
   const [showPopUp, setShowPopUp] = useState(false);
@@ -29,70 +44,108 @@ export default function Gmap() {
   const [formulario, setFormulario] = useState({ visible: false, tipo: '' });
 
   const clickOnMap = ({ x, y, lat, lng, event }) => {
+    //Usuario hace click en el mapa.
     axios
       .get(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyC5lobyQqUiuRQz6Gy5WydBszxcMnpzBHA`
       )
       .then(res => {
         setSelectedAddress(res.data.results[0].formatted_address);
-        setSelectedPoint({ direccion: selectedAddress, categoria: 'comercial', lat, lng });
+        setSelectedPoint({
+          direccion: selectedAddress,
+          categoria: 'comercial',
+          lat,
+          lng
+        });
         setFormulario({ visible: true, tipo: 'Agregar' });
       });
   };
 
   const clickOnMarker = marker => {
+    //Usuario hace click en un marcador
     setSelectedPoint(marker);
     setSelectedIndex(markers.indexOf(marker));
     setFormulario({ visible: true, tipo: 'Editar' });
   };
 
   const childEnter = key => {
-    console.log('enter');
+    // Mouse entra en Marcador
     setPopUpKey(key);
     setShowPopUp(true);
   };
 
-  const childLeave = (key, childProps) => {
+  const childLeave = () => {
+    // Mouse sale del marcador
     setTimeout(() => setShowPopUp(false), 5000);
   };
 
   const handleMarkerChange = event => {
+    // Actualiza el objeto con los input del formulario
     let modify = { ...selectedPoint };
     modify[event.target.name] = event.target.value;
     setSelectedPoint(modify);
   };
 
   const handleMarkerChangeSelect = event => {
+    //Actualiza el objeto con el select del formulario
     let modify = { ...selectedPoint };
     modify['categoria'] = event;
     setSelectedPoint(modify);
   };
 
   const addMarker = () => {
-    setMarkers([...markers, selectedPoint]);
-    setFormulario({ visible: false });
+    // Agrega un marcador
+    if (validateFields() === 0) {
+      setMarkers([...markers, selectedPoint]);
+      setFormulario({ visible: false });
+    } else {
+      alert(validateFields());
+    }
   };
   const saveMarker = () => {
-    setMarkers([
-      ...markers.map((element, index) => {
-        if (selectedIndex === index) {
-          return selectedPoint;
-        } else {
-          return element;
-        }
-      })
-    ]);
-    setFormulario({ visible: false });
+    // Guarda la edicion de un marcador
+    if (validateFields() === 0) {
+      setMarkers([
+        ...markers.map((element, index) => {
+          if (selectedIndex === index) {
+            return selectedPoint;
+          } else {
+            return element;
+          }
+        })
+      ]);
+      setFormulario({ visible: false });
+    } else {
+      alert(validateFields());
+    }
   };
 
   const deleteMarker = () => {
+    // Elimina un marcador
     setMarkers([
       ...markers.filter(element => markers.indexOf(element) !== selectedIndex)
     ]);
     setFormulario({ visible: false });
   };
 
+  const validateFields = () => {
+    let error = 0;
+    if (selectedPoint.nombre === '') {
+      error = 'Debe ingresar un nombre';
+    } else if (selectedPoint.direccion === '') {
+      error = 'Debe ingresar una direccion';
+    } else if (selectedPoint.telefono === '') {
+      error = 'Debe ingresar un telefono';
+    } else if (selectedPoint.categoria === '') {
+      error = 'Debe ingresar una categoria';
+    } else if (selectedPoint.lat === '' || selectedPoint.lng === '') {
+      error = 'Debe ingresar unas coordenadas validas';
+    }
+    return error;
+  };
+
   const footer = () => {
+    //Renderiza los botones segun el tipo de formulario
     if (formulario.tipo === 'Agregar') {
       return [
         <Button onClick={addMarker}>Agregar</Button>,
@@ -112,6 +165,7 @@ export default function Gmap() {
   };
 
   const renderFormulario = () => {
+    //Renderiza el formulario
     return (
       <Modal
         title={formulario.tipo + ' Marcador'}
@@ -150,7 +204,7 @@ export default function Gmap() {
               onChange={e => handleMarkerChangeSelect(e)}>
               <Select.Option value='comercial'>Comercial</Select.Option>
               <Select.Option value='residencial'>Residencial</Select.Option>
-              <Select.Option value='rixta'>Mixta</Select.Option>
+              <Select.Option value='mixta'>Mixta</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item label='Coordenadas'>
@@ -167,6 +221,7 @@ export default function Gmap() {
   };
 
   const renderPopUp = () => {
+    //Renderiza el InfoBox con la informacion
     let pop = markers[popUpKey];
     if (showPopUp && pop) {
       return (
@@ -180,12 +235,12 @@ export default function Gmap() {
           }}
           lat={pop.lat}
           lng={pop.lng}>
-          <List size="small">
-          <List.Item>{pop.nombre}</List.Item>
-          <List.Item>Direccion: {pop.direccion}</List.Item>
-          <List.Item>Telefono: {pop.telefono}</List.Item>
-          <List.Item>Categoria: {pop.categoria}</List.Item>
-          <List.Item>Coordenadas: {pop.lat + ', ' + pop.lng}</List.Item>
+          <List size='small'>
+            <List.Item>{pop.nombre}</List.Item>
+            <List.Item>Direccion: {pop.direccion}</List.Item>
+            <List.Item>Telefono: {pop.telefono}</List.Item>
+            <List.Item>Categoria: {pop.categoria}</List.Item>
+            <List.Item>Coordenadas: {pop.lat + ', ' + pop.lng}</List.Item>
           </List>
         </div>
       );
@@ -195,22 +250,19 @@ export default function Gmap() {
   };
 
   const mostrarMarcadores = () => {
+    //Renderiza los marcadores en el Mapa
     return markers.map((marker, index) => {
       return (
         <CustomMarker
           key={index}
           lat={marker.lat}
           lng={marker.lng}
-          text={marker.text}
+          icon={marker.categoria}
           onClick={() => clickOnMarker(marker)}
         />
       );
     });
   };
-
-  console.log('sp: ', selectedPoint);
-  console.log(markers);
-  loadData();
 
   return (
     <div style={{ height: '100vh', width: '100%' }}>
